@@ -62,6 +62,6 @@ uv run python -m dpnael.main
 
 ## Instalar sem clonar
 
-- Rode ``` curl -sSL https://raw.githubusercontent.com/Diegosny/dpnael-v2/main/install.sh | bash ```
+- Rode ``` curl -sSL https://raw.githubusercontent.com/Diegosny/dpnael-v2/master/install.sh | bash ```
 
 Este projeto está sob a licença MIT. Sinta-se livre para modificar e contribuir!
