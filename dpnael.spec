@@ -3,7 +3,7 @@
 
 a = Analysis(
     ['dpnael/main.py'],
-    pathex=[],
+    pathex=['.'],
     binaries=[],
     datas=[],
     hiddenimports=[],
