@@ -71,6 +71,7 @@ class DpnaelApp(App):
         Binding("b", "backup_image", "🖼️ Backup", show=True),
         Binding("c", "to_compose", "🧬 Compose", show=True),
         Binding("h", "add_host_domain", "🔗 Hosts", show=True),
+        Binding("H", "remove_host_domain", "❌ Del Host", show=True),
         Binding("P", "prune_system", "🧹 Prune", show=True),
         Binding("delete", "remove_item", "❌ Deletar", show=True),
     ]
@@ -400,6 +401,36 @@ class DpnaelApp(App):
             domain = input(f"Domínio para {ip} (ex: api.local): ").strip()
             if domain:
                 ok, msg = self.hosts_service.add_domain(ip, domain, c.name)
+                print(f"\n{msg}\n")
+                input("Pressione Enter para continuar...")
+        self.action_refresh()
+
+    def action_remove_host_domain(self) -> None:
+        hosts = self.hosts_service.list_domains()
+        if not hosts:
+            self.query_one("#preview", PreviewPanelWidget).update(
+                "[yellow]Nenhum domínio mapeado para remover.[/yellow]")
+            return
+
+        with self.suspend():
+            print("\n🔗 Domínios Mapeados Atuais:")
+            for idx, (domain, ip) in enumerate(hosts, 1):
+                print(f"  [{idx}] {domain} ➔ {ip}")
+
+            choice = input("\nDigite o domínio exato ou o número que deseja remover: ").strip()
+            if not choice:
+                return
+
+            target_domain = None
+            if choice.isdigit():
+                idx = int(choice) - 1
+                if 0 <= idx < len(hosts):
+                    target_domain = hosts[idx][0]
+            else:
+                target_domain = choice
+
+            if target_domain:
+                ok, msg = self.hosts_service.remove_domain(target_domain)
                 print(f"\n{msg}\n")
                 input("Pressione Enter para continuar...")
         self.action_refresh()
