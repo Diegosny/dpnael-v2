@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: dpnael
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: docker>=7.0.0
+Requires-Dist: urllib3<2.0.0
+Requires-Dist: requests<2.29.0
+Requires-Dist: setuptools>=83.0.0
+Requires-Dist: textual>=8.2.8
+Requires-Dist: docker-py>=1.10.6

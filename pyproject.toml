@@ -1,0 +1,22 @@
+[project]
+name = "dpnael"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "docker>=7.0.0",
+    "urllib3<2.0.0",
+    "requests<2.29.0",
+    "setuptools>=83.0.0",
+    "textual>=8.2.8",
+    "docker-py>=1.10.6",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dpnael*"]
