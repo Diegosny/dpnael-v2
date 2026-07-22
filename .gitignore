@@ -1,29 +1,30 @@
-# Ambientes Virtuais Python
 .env
 .venv
 env/
 venv/
 ENV/
 
-# Arquivos compilados / Cache Python
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
 .mypy_cache/
 
-# Arquivos e diretórios específicos de IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
 
-# Logs gerais e do Textual
 *.log
 textual.log
 
-# Arquivos gerados pela aplicação DPNAEL
 docker-compose-*.yml
 *.tar
 /tmp/dpnael_backups/
+
+build/
+dist/
+*.egg-info/
+.eggs/
+*.spec

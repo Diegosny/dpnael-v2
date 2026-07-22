@@ -356,3 +356,78 @@ services:
             return True, f"✔ Imagem '{image_name}' baixada com sucesso!"
         except Exception as e:
             return False, f"❌ Erro ao realizar pull: {e}"
+
+    def run_container(self, image_name: str, container_name: str = None, ports_str: str = None,
+                      volume_str: str = None) -> tuple[bool, str]:
+        """Faz o pull e executa um novo container usando a API universal compatível."""
+        if not self.client:
+            self._connect()
+            if not self.client:
+                return False, "❌ Cliente Docker não conectado."
+        try:
+            # 1. Garante o download da imagem
+            try:
+                if hasattr(self.client, "images") and hasattr(self.client.images, "pull"):
+                    self.client.images.pull(image_name)
+                elif hasattr(self.client, "pull"):
+                    self.client.pull(image_name)
+            except Exception as e:
+                return False, f"❌ Erro ao baixar imagem '{image_name}': {e}"
+
+            # 2. Configura portas (Ex: 9090:80)
+            port_bindings = {}
+            exposed_ports = {}
+            if ports_str and ":" in ports_str:
+                parts = ports_str.split(":")
+                host_p, container_p = parts[0].strip(), parts[1].strip()
+                container_key = f"{container_p}/tcp"
+                exposed_ports[container_key] = {}
+                port_bindings[container_key] = [{"HostPort": host_p}]
+
+            # 3. Configura volumes (Ex: /host/path:/container/path)
+            binds = {}
+            volumes_list = []
+            if volume_str and ":" in volume_str:
+                parts = volume_str.split(":")
+                host_path, container_path = parts[0].strip(), parts[1].strip()
+                if not os.path.exists(host_path):
+                    return False, f"❌ Caminho do host não existe: {host_path}"
+                binds[host_path] = {'bind': container_path, 'mode': 'rw'}
+                volumes_list = [container_path]
+
+            # 4. Tenta usar o high-level containers.run se disponível
+            if hasattr(self.client, "containers") and hasattr(self.client.containers, "run"):
+                try:
+                    kwargs = {"detach": True}
+                    if container_name: kwargs["name"] = container_name
+                    if port_bindings: kwargs["ports"] = {k: v[0]["HostPort"] for k, v in port_bindings.items()}
+                    if binds: kwargs["volumes"] = binds
+
+                    self.client.containers.run(image_name, **kwargs)
+                    return True, f"✔ Container executado com sucesso!"
+                except Exception:
+                    pass  # Se falhar, recorre ao método universal abaixo
+
+            # 5. Método universal de baixo nível (APIClient / Low-level API)
+            api_client = getattr(self.client, "api", self.client)
+
+            host_config = api_client.create_host_config(
+                port_bindings=port_bindings,
+                binds=binds
+            )
+
+            container_info = api_client.create_container(
+                image=image_name,
+                name=container_name if container_name else None,
+                ports=list(exposed_ports.keys()) if exposed_ports else None,
+                volumes=volumes_list if volumes_list else None,
+                host_config=host_config,
+                detach=True
+            )
+
+            container_id = container_info.get("Id")
+            api_client.start(container=container_id)
+
+            return True, f"✔ Container executado com sucesso!"
+        except Exception as e:
+            return False, f"❌ Erro ao rodar container: {e}"

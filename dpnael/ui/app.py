@@ -3,6 +3,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Header, Footer, Static, Input, TabbedContent, TabPane, OptionList, DataTable
+from dpnael.ui.screens.run_screen import RunContainerModal
 
 from dpnael.services.docker_service import DockerService
 from dpnael.services.hosts_service import HostsService
@@ -56,6 +57,7 @@ class DpnaelApp(App):
 
     BINDINGS = [
         Binding("q", "quit", "Sair", show=True),
+        Binding("o", "run_new_container", "🚀 Rodar Container", show=True),
         Binding("r", "refresh", "Atualizar", show=True),
         Binding("space", "toggle_start_stop", "▶️ Start/Stop", show=True),
         Binding("R", "restart_container", "🔄 Restart", show=True),
@@ -180,16 +182,16 @@ class DpnaelApp(App):
                 created = str(img.attrs.get("Created", ""))[:19] if isinstance(img.attrs, dict) else "N/A"
 
                 info = f"""[bold magenta]🖼️  TAG:[/bold magenta] [green]{tag}[/green]
-[bold magenta]🆔 ID:[/bold magenta] {img.short_id}
-[bold magenta]💾 TAMANHO:[/bold magenta] {size_mb}
-[bold magenta]⏱️  CRIADA EM:[/bold magenta] {created}
-
-[bold yellow]🛠️ AÇÕES DISPONÍVEIS:[/bold yellow]
-  • [bold cyan]i[/bold cyan] : Fazer Pull de nova imagem
-  • [bold cyan]b[/bold cyan] : Exportar Backup em .tar
-  • [bold cyan]x[/bold cyan] : Analisar camadas com Dive
-  • [bold red]DEL[/bold red] : Deletar esta imagem
-"""
+                    [bold magenta]🆔 ID:[/bold magenta] {img.short_id}
+                    [bold magenta]💾 TAMANHO:[/bold magenta] {size_mb}
+                    [bold magenta]⏱️  CRIADA EM:[/bold magenta] {created}
+                    
+                    [bold yellow]🛠️ AÇÕES DISPONÍVEIS:[/bold yellow]
+                      • [bold cyan]i[/bold cyan] : Fazer Pull de nova imagem
+                      • [bold cyan]b[/bold cyan] : Exportar Backup em .tar
+                      • [bold cyan]x[/bold cyan] : Analisar camadas com Dive
+                      • [bold red]DEL[/bold red] : Deletar esta imagem
+                    """
                 self.query_one("#image_preview", Static).update(info)
                 break
 
@@ -209,12 +211,12 @@ class DpnaelApp(App):
         mapped_hosts = [domain for domain, ip in hosts_list if ip == c_ip] if c_ip != "N/A" else []
 
         info = f"""[bold magenta]📦 CONTAINER:[/bold magenta] {c.name} ({c.short_id})
-[bold magenta]🏷️  STATUS:[/bold magenta] [{status_color}]{c.status.upper()}[/{status_color}]
-[bold magenta]🖼️  IMAGEM:[/bold magenta] {image_name}
-[bold magenta]🌐 IP INTERNO:[/bold magenta] {c_ip}
-
-[bold yellow]🔌 PORTAS MAPEADAS:[/bold yellow]
-"""
+            [bold magenta]🏷️  STATUS:[/bold magenta] [{status_color}]{c.status.upper()}[/{status_color}]
+            [bold magenta]🖼️  IMAGEM:[/bold magenta] {image_name}
+            [bold magenta]🌐 IP INTERNO:[/bold magenta] {c_ip}
+            
+            [bold yellow]🔌 PORTAS MAPEADAS:[/bold yellow]
+            """
         if ports:
             for container_port, host_bindings in ports.items():
                 if host_bindings:
@@ -237,9 +239,6 @@ class DpnaelApp(App):
     def get_selected_container(self):
         return self.query_one("#container_list", ContainerListWidget).get_selected_container()
 
-    # =========================================================================
-    # AÇÕES DE CICLO DE VIDA
-    # =========================================================================
 
     def action_toggle_start_stop(self) -> None:
         c = self.get_selected_container()
@@ -274,9 +273,20 @@ class DpnaelApp(App):
             self.query_one("#preview", PreviewPanelWidget).update(f"[red]❌ Erro ao pausar/despausar: {e}[/red]")
         self.action_refresh()
 
-    # =========================================================================
-    # DEMAIS AÇÕES
-    # =========================================================================
+    def action_run_new_container(self) -> None:
+        def on_run_submitted(data: dict | None):
+            if data:
+                ok, msg = self.docker_service.run_container(
+                    image_name=data["image"],
+                    container_name=data["name"],
+                    ports_str=data["ports"],
+                    volume_str=data["volume"]
+                )
+                self.query_one("#preview", PreviewPanelWidget).update(
+                    f"🚀 [bold magenta]Resultado do Run:[/bold magenta]\n\n{msg}")
+                self.action_refresh()
+
+        self.push_screen(RunContainerModal(), on_run_submitted)
 
     def action_pull_image(self) -> None:
         with self.suspend():
